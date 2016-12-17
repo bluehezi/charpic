@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>图片转字符画</title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        body {
+            background-color: #f0f0f0;
+        }
+        p {
+            font-size: 10px;
+            line-height: 10px;
+        }
+        #pic-show,
+        #char-txt {
+            box-sizing: border-box;
+            padding: 10px;
+        }
+
+        #pic-show {
+            display: flex;
+        }
+
+        #char-txt {
+            text-align: center;
+        }
+        .select {
+            border: 1px solid skyblue;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .select input {
+            display: none;
+        }
+        button {
+            border: 0;
+            background-color: #e62121;
+            color:#fff;
+            margin: 0;
+            font: 500 14px/20px 'Simsun';
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #e90000;
+        }
+
+        .dragbox {
+            display: inline-block;
+            width: 300px;
+            height: 200px;
+            border: 1px solid #e92322;
+            color:#666;
+            text-align: center;
+            line-height: 200px;
+            margin-left: 20px;
+        }
+    </style>
+</head>
+
+<body>
+<div id='pic-show'>
+    <canvas id="canvas"></canvas>
+</div>
+<div id="char-txt"></div>
+<div class="select">
+    <input id='file-up' type="file"/>
+    <button id="btn">选择图片</button>
+    <div class="dragbox">你还可以把图片拖拽至此</div>
+</div>
+<script>
+    (function(){
+        var canvas = document.querySelector('#canvas');
+        var ctx = canvas.getContext("2d");
+        var charTxt = document.querySelector('#char-txt');
+        var dragbox = document.querySelector('.dragbox');
+        render('./6681-106.jpg');
+        var fileUp = document.querySelector('#file-up');
+        fileUp.addEventListener('change', function (e) {
+            e.preventDefault();
+            if(this.files.length){
+                if( this.files[0].type.match(/image\/.*/)){
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        render(e.target.result);
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                }else{
+                    alert('请选择图片');
+                }
+            }
+        });
+        var btn = document.querySelector('#btn');
+        btn.addEventListener('click', (function () {
+            var timer = null;
+            return function () {
+                clearTimeout(timer);
+                timer = setTimeout(function () {
+                    fileUp.click();
+                },200);
+            };
+        })());
+        dragbox.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+        dragbox.addEventListener('drop', function (e) {
+            e.preventDefault();
+            var files = e.dataTransfer.files;
+            if(files.length && files[0].type.match(/image\/.*/)){
+                var reader = new FileReader();
+                reader.addEventListener('load', function (e) {
+                    render(e.target.result);
+                });
+                reader.readAsDataURL(files[0]);
+            }
+            var data = e.dataTransfer.getData('text/uri-list');
+            if(data){
+                render(data);
+            }
+        });
+        function render(src){
+            var img = new Image();
+            img.onload = init;
+            img.src = src;
+        }
+        function init(e){
+            var imgWidth = e.target.width;
+            var imgHeight = e.target.height;
+            var width = imgWidth;
+            var height = imgHeight;
+            canvas.width = width;
+            canvas.height = height;
+            canvas.style.margin = 'auto';
+            ctx.clearRect(0,0,width,height);
+            ctx.drawImage(this, 0, 0,imgWidth,imgHeight ,0,0,width,height);
+            var imgData = ctx.getImageData(0, 0, width, height);
+            var datas = imgData.data;
+            var dHeight = imgData.height;
+            var dWidth = imgData.width;
+            var html = '';
+            for(var row = 0 ; row<dHeight ; row+=10){
+                var p = '<p>';
+                for(var col = 0 ; col < dWidth ; col+=5){
+                    var gray = getGray(datas.slice((row*dWidth+col)*4,(row*dWidth+col+1)*4));
+                    p+=drawChar(gray);
+                }
+                p+='</p>';
+                html += p;
+            }
+            charTxt.innerHTML = html;
+        }
+        function getGray(rgba) {
+            return 0.299 * rgba[0] + 0.578 * rgba[1] + 0.114 * rgba[2];
+        }
+        function drawChar(g){
+            if (g <= 30) {
+                return '@';
+            } else if (g > 30 && g <= 60) {
+                return '&';
+            } else if (g > 60 && g <= 120) {
+                return '6';
+            }  else if (g > 120 && g <= 150) {
+                return '*';
+            } else if (g > 150 && g <= 180) {
+                return 'o';
+            } else if (g > 180 && g <= 210) {
+                return '!';
+            } else if (g > 210 && g <= 240) {
+                return ';';
+            }  else {
+                return '.';
+            }
+        }
+    })();
+</script>
+</body>
+
+</html>
